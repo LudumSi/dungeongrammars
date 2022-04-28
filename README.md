@@ -45,7 +45,7 @@ These are based on the numpad
 123             ╚╩╝
 ```
 
-### Wildcard Tiles
+#### Wildcard Tiles
 The ? character has different behaviour depending on whether its in the pattern or the rule.
 
 If they are in the pattern, they ignore the tile type and act as a wildcard.
