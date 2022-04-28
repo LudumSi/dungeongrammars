@@ -2,7 +2,7 @@
 ## A grid grammar based dungeon generator
 
 ## Rule syntax
-###Options
+### Options
 All rules start with a line showing their dimensions in Columns,Rows format
 Rules which should have rotations generated should have an "R" options
 
