@@ -34,4 +34,27 @@ impl Rule{
         self.rows = self.pattern.array.len();
         self.columns = self.pattern.array[0].len();
     }
+
+    //Fips the target and results of a rule veritcally
+    pub fn flip_v(&mut self){
+        self.pattern.flip_v();
+        for i in 0..self.results.len(){
+            self.results[i].flip_v();
+        }
+
+        self.rows = self.pattern.array.len();
+        self.columns = self.pattern.array[0].len();
+    }
+
+    //Flips the target and results of a rule horizontally
+    pub fn flip_h(&mut self){
+        self.pattern.flip_h();
+        for i in 0..self.results.len(){
+            self.results[i].flip_h();
+        }
+
+        self.rows = self.pattern.array.len();
+        self.columns = self.pattern.array[0].len();
+    }
+
 }

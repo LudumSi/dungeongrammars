@@ -69,15 +69,15 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
     //Controls whether or not we flip and rotate
     let mut rotate = false;
     let mut fliphorizontal = false;
-    let mut flipveritcal = false;
+    let mut flipvertical = false;
 
     //Handle the rest of the options
     for i in 2..options_vec.len(){
         for char in options_vec[i].chars(){
             match char{
                 'R' => {rotate = true;},
-                //'H' => {fliphorizontal = true;},
-                //'V' => {flipvertical = true;},
+                'H' => {fliphorizontal = true;},
+                'V' => {flipvertical = true;},
                 _ => (),
             }
         }
@@ -166,6 +166,26 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
             }
             rules_vec.push(rot_rule);
         }
+    }
+
+    if fliphorizontal {
+        let mut flipped_rules: Vec<Rule> = Vec::new();
+        for rule in &rules_vec{
+            let mut flip_rule = rule.clone();
+            flip_rule.flip_h();
+            flipped_rules.push(flip_rule);
+        }
+        rules_vec.append(&mut flipped_rules);
+    }
+
+    if flipvertical {
+        let mut flipped_rules: Vec<Rule> = Vec::new();
+        for rule in &rules_vec{
+            let mut flip_rule = rule.clone();
+            flip_rule.flip_v();
+            flipped_rules.push(flip_rule);
+        }
+        rules_vec.append(&mut flipped_rules);
     }
 
     Some(rules_vec)

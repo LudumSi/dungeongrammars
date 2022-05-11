@@ -61,4 +61,32 @@ impl Grid{
         self.columns = self.array[0].len();
         self.rows = self.array.len();
     }
+
+    pub fn flip_h(&mut self){
+        let mut newgrid = vec![vec![Tile::Blank;self.columns];self.rows];
+        for i in 0..self.rows{
+            for j in 0..self.columns{
+                newgrid[i][self.columns-j-1] = flip_tile_h(self.array[i][j])
+            }
+        }
+
+        self.array = newgrid;
+
+        self.columns = self.array[0].len();
+        self.rows = self.array.len();
+    }
+
+    pub fn flip_v(&mut self){
+        let mut newgrid = vec![vec![Tile::Blank;self.columns];self.rows];
+        for i in 0..self.rows{
+            for j in 0..self.columns{
+                newgrid[self.columns-i-1][j] = flip_tile_v(self.array[i][j])
+            }
+        }
+
+        self.array = newgrid;
+
+        self.columns = self.array[0].len();
+        self.rows = self.array.len();
+    }
 }
