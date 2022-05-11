@@ -37,12 +37,14 @@ c5c
 The following characters in the rules describe the following tile types:
 
 #### Basic Tiles
+```
 c: Horizontal corridor
 C: Vertical corridor
 r: Room
 R: Room2 - renders the same as room but rules consider them distinct
 ~: "Water" tile
 .: Empty space
+```
 
 #### Intersection Tiles
 These are based on the numpad
