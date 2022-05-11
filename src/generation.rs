@@ -20,15 +20,6 @@ impl Grid{
 
     //Checks a location to see if the target of a rule matches
     pub fn check_location(&mut self, row: usize, column: usize, rule:&Rule)->bool{
-        //Safety checks
-        if row+rule.rows >= self.rows{
-            return false;
-        }
-
-        if column+rule.columns >= self.columns {
-            return false;
-        }
-
         for k in 0..rule.rows{
             for l in 0..rule.columns{
                 if rule.pattern.array[k][l] != Tile::Unknown && self.array[row+k][column+l] != rule.pattern.array[k][l]{
@@ -44,8 +35,8 @@ impl Grid{
     pub fn apply_rule_lazy(&mut self, rule: &Rule){
 
         //Iterate over the whole dungeon grid the rule can reach
-        for i in 0..(self.rows-rule.rows){
-            for j in 0..(self.columns-rule.columns){
+        for i in 0..=(self.rows-rule.rows){
+            for j in 0..=(self.columns-rule.columns){
 
                 //Scan and replace with a random replacement
                 if self.check_location(i,j,rule) {
@@ -62,8 +53,10 @@ impl Grid{
         let mut candidates: Vec<(usize,usize)> = Vec::new();
 
         //Iterate over the whole dungeon grid the rule can reach
-        for i in 0..(self.rows-rule.rows){
-            for j in 0..(self.columns-rule.columns){
+        for i in 0..=(self.rows-rule.rows){
+            for j in 0..=(self.columns-rule.columns){
+
+                //println!("Considering {} {}",i,j);
 
                 if self.check_location(i,j,rule) {
                     candidates.push((i,j));
