@@ -32,6 +32,61 @@ pub fn string_from_file(path: &Path)->Option<String>{
     Some(s)
 }
 
+//Read the dimensions from the given line
+fn read_dimensions(line: &str) -> Option<(usize,usize)>{
+    let dimensions = lines_lines.split(',');
+    let dimensions_vec = options.collect::<Vec<&str>>();
+
+    //Check for no dimensions
+    if options_vec.len() < 2 {
+        println!("No coordinates in {}!",display);
+        return None;
+    }
+
+    //Could use some further error handling here
+    let columns = options_vec[0].parse::<usize>().unwrap();
+    let rows = options_vec[1].parse::<usize>().unwrap();
+    //println!("Columns and rows: {} {}",rule_columns,rule_rows);
+
+    return Some((columns,rows));
+}
+
+//For storing info on the rule options
+//Research better data structure
+struct RuleOptions{
+    rotation: bool,
+    flip_h: bool,
+    flip_v: bool,
+}
+
+impl RuleOptions{
+    fn new() -> RuleOptions{
+        RuleOptions{rotation:false,flip_h:false,flip_v:false}
+    }
+}
+
+//Read option flags from the given line
+fn read_options(line: &str) -> Option<RuleOptions>{
+    let new_options = RuleOptions::new();
+
+    let options = lines_lines.split(',');
+    let options_vec = options.collect::<Vec<&str>>();
+
+    //Handle the rest of the options
+    for i in 2..options_vec.len(){
+        for char in options_vec[i].chars(){
+            match char{
+                'W' => {},
+                'H' => {},
+                'R' => {new_options.rotation = true;},
+                'H' => {fliphorizontal = true;},
+                'V' => {flipvertical = true;},
+                _ => (),
+            }
+        }
+    }
+}
+
 pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
 
     //Get the string
@@ -51,36 +106,6 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
     if lines_vec.len() < 1 {
         println!("Nothing in {}!",display);
         return None;
-    }
-    let options = lines_vec[0].split(',');
-    let options_vec = options.collect::<Vec<&str>>();
-
-    //First two options are always columns and rows
-    //Check for not enough options
-    if options_vec.len() < 2 {
-        println!("No coordinates in {}!",display);
-        return None;
-    }
-
-    let rule_columns = options_vec[0].parse::<usize>().unwrap();
-    let rule_rows = options_vec[1].parse::<usize>().unwrap();
-    //println!("Columns and rows: {} {}",rule_columns,rule_rows);
-
-    //Controls whether or not we flip and rotate
-    let mut rotate = false;
-    let mut fliphorizontal = false;
-    let mut flipvertical = false;
-
-    //Handle the rest of the options
-    for i in 2..options_vec.len(){
-        for char in options_vec[i].chars(){
-            match char{
-                'R' => {rotate = true;},
-                'H' => {fliphorizontal = true;},
-                'V' => {flipvertical = true;},
-                _ => (),
-            }
-        }
     }
 
     //Handle the rest of the lines
@@ -210,5 +235,4 @@ pub fn import_rules_folder()->Option<Vec<Rule>>{
     }
 
     return Some(rules)
-
 }
