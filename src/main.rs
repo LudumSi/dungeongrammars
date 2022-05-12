@@ -15,8 +15,10 @@ use crate::input::*;
 
 fn main() {
 
-    let mut test_grid = Grid::new(50,50,Tile::Blank);
-    test_grid.init_tjuction();
+    let mut base_grid = match import_base_grid("./base.txt"){
+        Some(x) => x,
+        None => panic!("Failed to load base grid!"),
+    };
 
     let rules_vec = match import_rules_folder(){
         None => panic!("Failed to get input!"),
@@ -24,8 +26,8 @@ fn main() {
     };
 
     for _i in 0..150{
-        test_grid.apply_random_rule(&rules_vec);
+        base_grid.apply_random_rule(&rules_vec);
     }
 
-    test_grid.print();
+    base_grid.print();
 }

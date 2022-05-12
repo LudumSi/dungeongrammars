@@ -288,6 +288,51 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
     Some(rules_vec)
 }
 
+pub fn import_base_grid(str: &str)->Option<Grid>{
+
+    let path = Path::new(str);
+    let display = path.display();
+
+    //Get the data
+    let s = match string_from_file(&path){
+        None => return None,
+        Some(x) => x,
+    };
+
+    //Parse the string into lines
+    let mut lines = s.lines();
+
+    //Handle the first line, which should have the dimensions
+    let dimensions = match read_dimensions(lines.next()){
+        None => {
+            println!("No dimensions in {}",display);
+            return None
+        }
+        Some(x) => x,
+    };
+
+    //On the assumtion that there is a equation mark, consume it
+    //Not strictly necessary in this case, but useful to reinforce it in the users minds
+    match lines.next(){
+        None => {
+            println!("Missing content in {}",display);
+            return None
+        }
+        Some(str) => {
+            match str.chars().next(){
+                Some('=') => (),
+                _ => {
+                    println!("Missing spacer in {}",display);
+                    return None
+                }
+            }
+        }
+    }
+
+    //From there, just get the grid
+    return read_grid(&dimensions,&mut lines);
+}
+
 pub fn import_rules_folder()->Option<Vec<Rule>>{
 
     let paths = fs::read_dir("./rules/").unwrap();
