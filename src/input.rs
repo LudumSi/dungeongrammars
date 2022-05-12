@@ -3,6 +3,7 @@ use std::path::Path;
 use std::fs;
 use std::fs::File;
 use std::io::Read;
+use std::str::Lines;
 
 use crate::grid::*;
 use crate::rule::*;
@@ -129,6 +130,44 @@ fn add_rule_variants(rules_vec: &mut Vec<Rule>, options:RuleOptions){
     }
 }
 
+//Reads in a grid given the dimensions
+pub fn read_grid(dimensions: &(usize,usize),lines: &mut Lines)->Option<Grid>{
+
+    let mut counter = 0;
+    let mut grid = Grid::new(dimensions.0,dimensions.1,Tile::Unknown);
+
+    while counter < dimensions.0 {
+
+        match lines.next(){
+            Some(x) => {
+                let chars_vec = x.chars().collect::<Vec<char>>();
+                for j in 0..chars_vec.len(){
+                    if j == dimensions.1{
+                        println!("Warning: Line has too many columns");
+                        break;
+                    }
+
+                    match chars_vec[j]{
+                        //Indicates we were not given enough rows
+                        '='|'\\' => return None,
+                        //Literally anything else
+                        _ => {
+                            grid.array[counter][j] = import_tile(chars_vec[j]);
+                        },
+                    }
+                }
+            }
+
+            //Indicates the grid has too many rows
+            None => return None,
+        }
+
+        counter += 1;
+    }
+
+    return Some(grid)
+}
+
 pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
 
     //Get the string
@@ -162,9 +201,12 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
         Some(x) => x,
     };
 
+    //The vector we will need to put the grids into
+    let mut grids_vec: Vec<Grid> = Vec::new();
+
     let options: RuleOptions;
     //If there is an equals sign, we know there are no options
-    if second_line.clone().chars().next() != Some('='){
+    if second_line.chars().next() != Some('='){
 
         //Handle the options
         options = match read_options(second_line){
@@ -172,76 +214,51 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
             Some(x) => x,
         };
 
-        //Consume the next line, ensuring there is an equals sign
+    }else{
+        options = RuleOptions::new();
+
+        //Handle the first grid, as we have consumed the equals
+        match read_grid(&dimensions,&mut lines){
+            None => (),
+            Some(x) => grids_vec.push(x),
+        }
+    }
+
+    //Handle the rest of the lines
+    //These will either be lines full of data for grids or spacer lines with weights
+
+    let mut getting_grids = true;
+    while getting_grids{
+        //Check the next line, ensuring there is an equals sign
         match lines.next(){
             None => {
-                println!("Missing content in {}",display);
-                return None
-            }
-            Some(x) => {
-                if x.chars().next() != Some('='){
-                    println!("Missing target in {}",display);
+                if grids_vec.len() == 0 {
+                    println!("Missing content in {}",display);
                     return None
+                }else{
+                    getting_grids = false;
+                }
+            }
+            //Ensure we have our spacer
+            Some(x) => {
+                //println!("{}",x);
+                //This is where I will want to check for weights later
+                match x.chars().next(){
+                    Some('=') => {
+                        match read_grid(&dimensions,&mut lines){
+                            None => (),
+                            Some(x) => grids_vec.push(x),
+                        }
+                    }
+                    Some(_) => {
+                        println!("Missing spacer in {}",display);
+                        return None
+                    }
+                    None => (),
                 }
             }
         }
-    }else{
-        options = RuleOptions::new();
     }
-
-    //Handle the rest of it (unrefactored)
-    let lines_vec = lines.collect::<Vec<&str>>();
-
-    //Handle the rest of the lines
-    //These will either be lines full of data for grids or spacer lines
-    let mut grids_vec: Vec<Grid> = Vec::new();
-
-    let mut current_row = 0;
-    let mut reset_grid = false;
-
-    let mut current_grid = Grid::new(dimensions.0,dimensions.1,Tile::Unknown);
-
-    for i in 0..lines_vec.len(){
-
-        let chars_vec = lines_vec[i].chars().collect::<Vec<char>>();
-        for j in 0..chars_vec.len(){
-            if j == dimensions.1{
-                println!("Warning: Line {} in {} has too many columns",i,display);
-                break;
-            }
-
-            match chars_vec[j]{
-                '=' => {
-                    reset_grid = true;
-                    //println!("Resetting grid!");
-                    break;
-                },
-                _ => {
-                    if current_row == dimensions.0{
-                        println!("Grid with too many rows in {} at line {}", display,i);
-                        return None;
-                    }
-                    current_grid.array[current_row][j] = import_tile(chars_vec[j]);
-                },
-            }
-        }
-
-        //Resets for the next grid
-        if reset_grid{
-            if current_row < (dimensions.0)-1{
-                println!("Grid with too few rows in {} at line {}", display,i);
-                return None;
-            }
-            current_row = 0;
-            reset_grid = false;
-            grids_vec.push(current_grid);
-            current_grid = Grid::new(dimensions.0,dimensions.1,Tile::Unknown);
-        }else{
-            current_row += 1;
-        }
-    }
-
-    grids_vec.push(current_grid);
 
     //Package everything up into a vector of rules
     let mut rules_vec: Vec<Rule> = Vec::new();
@@ -255,7 +272,7 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
 
     //Just in case
     if grids_vec.len() < 2 {
-        println!("Base rule does not have any results in {}",display);
+        println!("Base rule does not have any results in {}: {}",display,grids_vec.len());
         return None;
     }
 
