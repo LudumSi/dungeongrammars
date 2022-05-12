@@ -33,20 +33,26 @@ pub fn string_from_file(path: &Path)->Option<String>{
 }
 
 //Read the dimensions from the given line
-fn read_dimensions(line: &str) -> Option<(usize,usize)>{
-    let dimensions = lines_lines.split(',');
-    let dimensions_vec = options.collect::<Vec<&str>>();
+fn read_dimensions(in_line: Option<&str>) -> Option<(usize,usize)>{
 
-    //Check for no dimensions
-    if options_vec.len() < 2 {
-        println!("No coordinates in {}!",display);
+    //Handle case where there is no line
+    let line: &str;
+    match in_line{
+        None => return None,
+        Some(x) => line = x,
+    }
+
+    let dimensions = line.split(',');
+    let dimensions_vec = dimensions.collect::<Vec<&str>>();
+
+    //Check for lack of dimensions
+    if dimensions_vec.len() < 2 {
         return None;
     }
 
     //Could use some further error handling here
-    let columns = options_vec[0].parse::<usize>().unwrap();
-    let rows = options_vec[1].parse::<usize>().unwrap();
-    //println!("Columns and rows: {} {}",rule_columns,rule_rows);
+    let columns = dimensions_vec[0].parse::<usize>().unwrap();
+    let rows = dimensions_vec[1].parse::<usize>().unwrap();
 
     return Some((columns,rows));
 }
@@ -67,24 +73,24 @@ impl RuleOptions{
 
 //Read option flags from the given line
 fn read_options(line: &str) -> Option<RuleOptions>{
-    let new_options = RuleOptions::new();
+    let mut new_options = RuleOptions::new();
 
-    let options = lines_lines.split(',');
+    let options = line.split(',');
     let options_vec = options.collect::<Vec<&str>>();
 
     //Handle the rest of the options
-    for i in 2..options_vec.len(){
-        for char in options_vec[i].chars(){
+    for option in options_vec{
+        for char in option.chars(){
             match char{
-                'W' => {},
-                'H' => {},
                 'R' => {new_options.rotation = true;},
-                'H' => {fliphorizontal = true;},
-                'V' => {flipvertical = true;},
+                'H' => {new_options.flip_h = true;},
+                'V' => {new_options.flip_v = true;},
                 _ => (),
             }
         }
     }
+
+    return Some(new_options);
 }
 
 pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
@@ -98,15 +104,57 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
     let display = path.display();
 
     //Parse the string
+    
+    let mut lines = s.lines();
+    //let lines_vec = lines.collect::<Vec<&str>>();
 
-    let lines = s.lines();
-    let lines_vec = lines.collect::<Vec<&str>>();
+    //Handle the first line, which should have the dimensions
+    let dimensions = match read_dimensions(lines.next()){
+        None => {
+            println!("No dimensions in {}",display);
+            return None
+        }
+        Some(x) => x,
+    };
 
-    //Handle the first line
-    if lines_vec.len() < 1 {
-        println!("Nothing in {}!",display);
-        return None;
+    //Handle the second line, which should either have the options or an equals sign
+    let second_line = match lines.next(){
+        None => {
+            println!("Missing content in {}",display);
+            return None
+        },
+        Some(x) => x,
+    };
+
+    let options: RuleOptions;
+    //If there is an equals sign, we know there are no options
+    if second_line.clone().chars().next() != Some('='){
+
+        //Handle the options
+        options = match read_options(second_line){
+            None => RuleOptions::new(),
+            Some(x) => x,
+        };
+
+        //Consume the next line, ensuring there is an equals sign
+        match lines.next(){
+            None => {
+                println!("Missing content in {}",display);
+                return None
+            }
+            Some(x) => {
+                if x.chars().next() != Some('='){
+                    println!("Missing target in {}",display);
+                    return None
+                }
+            }
+        }
+    }else{
+        options = RuleOptions::new();
     }
+
+    //Handle the rest of it (unrefactored)
+    let lines_vec = lines.collect::<Vec<&str>>();
 
     //Handle the rest of the lines
     //These will either be lines full of data for grids or spacer lines
@@ -115,13 +163,13 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
     let mut current_row = 0;
     let mut reset_grid = false;
 
-    let mut current_grid = Grid::new(rule_rows,rule_columns,Tile::Unknown);
+    let mut current_grid = Grid::new(dimensions.0,dimensions.1,Tile::Unknown);
 
-    for i in 1..lines_vec.len(){
+    for i in 0..lines_vec.len(){
 
         let chars_vec = lines_vec[i].chars().collect::<Vec<char>>();
         for j in 0..chars_vec.len(){
-            if j == rule_columns{
+            if j == dimensions.1{
                 println!("Warning: Line {} in {} has too many columns",i,display);
                 break;
             }
@@ -133,7 +181,7 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
                     break;
                 },
                 _ => {
-                    if current_row == rule_rows{
+                    if current_row == dimensions.0{
                         println!("Grid with too many rows in {} at line {}", display,i);
                         return None;
                     }
@@ -144,14 +192,14 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
 
         //Resets for the next grid
         if reset_grid{
-            if current_row < rule_rows-1{
+            if current_row < (dimensions.0)-1{
                 println!("Grid with too few rows in {} at line {}", display,i);
                 return None;
             }
             current_row = 0;
             reset_grid = false;
             grids_vec.push(current_grid);
-            current_grid = Grid::new(rule_rows,rule_columns,Tile::Unknown);
+            current_grid = Grid::new(dimensions.0,dimensions.1,Tile::Unknown);
         }else{
             current_row += 1;
         }
@@ -165,8 +213,8 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
     let mut base_rule = Rule{
         pattern: grids_vec[0].clone(),
         results: Vec::new(),
-        rows: rule_rows,
-        columns: rule_columns,
+        rows: dimensions.0,
+        columns: dimensions.1,
     };
 
     //Just in case
@@ -182,7 +230,7 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
     rules_vec.push(base_rule);
 
     //Handle rotation and flip rules as needed
-    if rotate {
+    if options.rotation {
         for i in 1..=3{
             let mut rot_rule = rules_vec[0].clone();
             for _j in 0..i{
@@ -193,7 +241,7 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
         }
     }
 
-    if fliphorizontal {
+    if options.flip_h {
         let mut flipped_rules: Vec<Rule> = Vec::new();
         for rule in &rules_vec{
             let mut flip_rule = rule.clone();
@@ -203,7 +251,7 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
         rules_vec.append(&mut flipped_rules);
     }
 
-    if flipvertical {
+    if options.flip_v {
         let mut flipped_rules: Vec<Rule> = Vec::new();
         for rule in &rules_vec{
             let mut flip_rule = rule.clone();
@@ -224,7 +272,7 @@ pub fn import_rules_folder()->Option<Vec<Rule>>{
     for path in paths{
         println!("Loading {}",path.as_ref().unwrap().path().display());
         let mut new_rules: Vec<Rule> = match import_rule_file(&path.unwrap().path()){
-            None => {break;},
+            None => Vec::new(),
             Some(x) => x,
         };
         rules.append(&mut new_rules);

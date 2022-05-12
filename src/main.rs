@@ -15,7 +15,7 @@ use crate::input::*;
 
 fn main() {
 
-    let mut test_grid = Grid::new(50,3,Tile::Blank);
+    let mut test_grid = Grid::new(50,50,Tile::Blank);
     test_grid.init_tjuction();
 
     let rules_vec = match import_rules_folder(){
