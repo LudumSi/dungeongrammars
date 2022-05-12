@@ -93,6 +93,42 @@ fn read_options(line: &str) -> Option<RuleOptions>{
     return Some(new_options);
 }
 
+//Adds rotations, flips, etc.
+fn add_rule_variants(rules_vec: &mut Vec<Rule>, options:RuleOptions){
+
+    //Handle rotation and flip rules as needed
+    if options.rotation {
+        for i in 1..=3{
+            let mut rot_rule = rules_vec[0].clone();
+            for _j in 0..i{
+                //println!("Being called {} of {}",j,i);
+                rot_rule.rotate_cw();
+            }
+            rules_vec.push(rot_rule);
+        }
+    }
+
+    if options.flip_h {
+        let mut flipped_rules: Vec<Rule> = Vec::new();
+        for i in 0..rules_vec.len(){
+            let mut flip_rule = rules_vec[i].clone();
+            flip_rule.flip_h();
+            flipped_rules.push(flip_rule);
+        }
+        rules_vec.append(&mut flipped_rules);
+    }
+
+    if options.flip_v {
+        let mut flipped_rules: Vec<Rule> = Vec::new();
+        for i in 0..rules_vec.len(){
+            let mut flip_rule = rules_vec[i].clone();
+            flip_rule.flip_v();
+            flipped_rules.push(flip_rule);
+        }
+        rules_vec.append(&mut flipped_rules);
+    }
+}
+
 pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
 
     //Get the string
@@ -104,7 +140,7 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
     let display = path.display();
 
     //Parse the string
-    
+
     let mut lines = s.lines();
     //let lines_vec = lines.collect::<Vec<&str>>();
 
@@ -229,37 +265,8 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
 
     rules_vec.push(base_rule);
 
-    //Handle rotation and flip rules as needed
-    if options.rotation {
-        for i in 1..=3{
-            let mut rot_rule = rules_vec[0].clone();
-            for _j in 0..i{
-                //println!("Being called {} of {}",j,i);
-                rot_rule.rotate_cw();
-            }
-            rules_vec.push(rot_rule);
-        }
-    }
-
-    if options.flip_h {
-        let mut flipped_rules: Vec<Rule> = Vec::new();
-        for rule in &rules_vec{
-            let mut flip_rule = rule.clone();
-            flip_rule.flip_h();
-            flipped_rules.push(flip_rule);
-        }
-        rules_vec.append(&mut flipped_rules);
-    }
-
-    if options.flip_v {
-        let mut flipped_rules: Vec<Rule> = Vec::new();
-        for rule in &rules_vec{
-            let mut flip_rule = rule.clone();
-            flip_rule.flip_v();
-            flipped_rules.push(flip_rule);
-        }
-        rules_vec.append(&mut flipped_rules);
-    }
+    //Adds rotations, mirrors, etc.
+    add_rule_variants(&mut rules_vec,options);
 
     Some(rules_vec)
 }
