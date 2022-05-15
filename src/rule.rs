@@ -4,15 +4,22 @@ use crate::grid::*;
 #[derive(Clone)]
 pub struct Rule{
     pub pattern: Grid,
+    pub weight: usize,
     pub results: Vec<Grid>,
+    pub result_weights: Vec<usize>,
     pub rows: usize,
     pub columns: usize,
+}
+
+pub struct RuleSet{
+    pub rules: Vec<Rule>,
+    pub weights: Vec<usize>,
 }
 
 impl Rule{
 
     //Prints a rule. Was mostly used for debug
-    pub fn print(&self){
+    pub fn _print(&self){
         self.pattern.print();
         println!("\nbecomes\n");
         for i in 0..self.results.len(){

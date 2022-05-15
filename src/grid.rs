@@ -27,25 +27,6 @@ impl Grid{
         }
     }
 
-    //Creates an initial t junction to fill the grid with
-    pub fn init_tjuction(&mut self){
-        let x = rand::random::<usize>() % self.columns;
-        let y = rand::random::<usize>() % self.rows;
-
-        //The way across
-        for i in 0..self.columns{
-            self.array[y][i] = Tile::CorridorEW;
-        }
-
-        //From above
-        for i in 0..y{
-            self.array[i][x] = Tile::CorridorNS;
-        }
-
-        //Overwrite the intersection
-        self.array[y][x] = Tile::ThreewayS;
-    }
-
     //Rotates the whole grid clockwise
     //Works for non-square grids as well as square ones
     pub fn rotate_cw(&mut self){

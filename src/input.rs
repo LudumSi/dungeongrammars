@@ -8,6 +8,7 @@ use std::str::Lines;
 use crate::grid::*;
 use crate::rule::*;
 use crate::tile::*;
+use crate::generation::*;
 
 pub fn string_from_file(path: &Path)->Option<String>{
     //Get the rule file
@@ -131,7 +132,7 @@ fn add_rule_variants(rules_vec: &mut Vec<Rule>, options:RuleOptions){
 }
 
 //Reads in a grid given the dimensions
-pub fn read_grid(dimensions: &(usize,usize),lines: &mut Lines)->Option<Grid>{
+fn read_grid(dimensions: &(usize,usize),lines: &mut Lines)->Option<Grid>{
 
     let mut counter = 0;
     let mut grid = Grid::new(dimensions.0,dimensions.1,Tile::Unknown);
@@ -166,6 +167,31 @@ pub fn read_grid(dimensions: &(usize,usize),lines: &mut Lines)->Option<Grid>{
     }
 
     return Some(grid)
+}
+
+fn get_weight(string: &str) -> Option<usize>{
+
+    let mut weights = string.split('=');
+
+    //Clears out an empty string
+    weights.next();
+
+    match weights.next(){
+            Some("") => return None,
+            Some(x) => {
+                match x.parse::<usize>(){
+                    Ok(y) => {
+                        //println!("Got weight {}!",y);
+                        return Some(y)
+                    }
+                    Err(_y) => {
+                        //println!("Parse err: {}",y);
+                        return None
+                    }
+                }
+            }
+            None => return None,
+    };
 }
 
 pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
@@ -203,6 +229,12 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
 
     //The vector we will need to put the grids into
     let mut grids_vec: Vec<Grid> = Vec::new();
+    //Vector to put weights into
+    let mut weights_vec: Vec<usize> = Vec::new();
+
+    //Weighting information
+    let mut got_rule_weight = false;
+    let mut rule_weight = 1;
 
     let options: RuleOptions;
     //If there is an equals sign, we know there are no options
@@ -216,6 +248,13 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
 
     }else{
         options = RuleOptions::new();
+
+        //Handle the weight for the rule as a whole here
+        got_rule_weight = true;
+        rule_weight = match get_weight(second_line){
+            None => 1,
+            Some(x) => x,
+        };
 
         //Handle the first grid, as we have consumed the equals
         match read_grid(&dimensions,&mut lines){
@@ -245,6 +284,19 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
                 //This is where I will want to check for weights later
                 match x.chars().next(){
                     Some('=') => {
+
+                        let new_weight = match get_weight(x){
+                            None => 1,
+                            Some(y) => y,
+                        };
+
+                        if !got_rule_weight{
+                            rule_weight = new_weight;
+                            got_rule_weight = true;
+                        }else{
+                            weights_vec.push(new_weight);
+                        }
+
                         match read_grid(&dimensions,&mut lines){
                             None => (),
                             Some(x) => grids_vec.push(x),
@@ -265,7 +317,9 @@ pub fn import_rule_file(path: &Path)->Option<Vec<Rule>>{
 
     let mut base_rule = Rule{
         pattern: grids_vec[0].clone(),
+        weight: rule_weight,
         results: Vec::new(),
+        result_weights: compute_cdf(weights_vec),
         rows: dimensions.0,
         columns: dimensions.1,
     };
@@ -333,7 +387,7 @@ pub fn import_base_grid(str: &str)->Option<Grid>{
     return read_grid(&dimensions,&mut lines);
 }
 
-pub fn import_rules_folder()->Option<Vec<Rule>>{
+pub fn import_rules_folder()->Option<RuleSet>{
 
     let paths = fs::read_dir("./rules/").unwrap();
     let mut rules: Vec<Rule> = Vec::new();
@@ -347,9 +401,21 @@ pub fn import_rules_folder()->Option<Vec<Rule>>{
         rules.append(&mut new_rules);
     }
 
+    //If there are no rules
     if rules.len() == 0{
         return None
     }
 
-    return Some(rules)
+    //If there are rules, calculate the cdf for weighted random
+    let mut pre_cdf: Vec<usize> = Vec::new();
+    for rule in &rules{
+        pre_cdf.push(rule.weight);
+    }
+
+    let weights = compute_cdf(pre_cdf);
+
+    Some(RuleSet{
+        rules: rules,
+        weights: weights,
+    })
 }

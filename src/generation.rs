@@ -3,11 +3,46 @@ use crate::tile::*;
 use crate::rule::*;
 use crate::grid::*;
 
+pub fn compute_cdf(weights: Vec<usize>) -> Vec<usize>{
+    let mut current_total = 0;
+    let mut cdf: Vec<usize> = Vec::new();
+
+    for weight in weights{
+        current_total += weight;
+        cdf.push(current_total);
+    }
+
+    cdf
+}
+
+pub fn weighted_pick(size: usize, cdf: &Vec<usize>) -> usize{
+
+    //Safety check to ensure usize is the size of the cdf
+    if size != cdf.len(){
+        panic!("Weighted pick was passed a size {} which did not match cdf {}!",size,cdf.len());
+    }
+
+    let last = match cdf.last(){
+        Some(x) => x,
+        None => panic!("Weighted pick was passed an empty cdf function!"),
+    };
+
+    //Random float limited to range of the cdf
+    let r = rand::random::<usize>() % last+1;
+
+    //Binary search by the random val to get the index to go with
+    match cdf.binary_search(&r){
+        Ok(y) => return y,
+        Err(y) => return y,
+    };
+
+}
+
 impl Grid{
     //Copies a random result from a rule to the given location
     pub fn replace_with_rule(&mut self, row: usize, column: usize, rule:&Rule){
         //Choose replacement
-        let r = rand::random::<usize>() % rule.results.len();
+        let r = weighted_pick(rule.results.len(),&rule.result_weights);
 
         for k in 0..rule.rows{
             for l in 0..rule.columns{
@@ -32,7 +67,7 @@ impl Grid{
     }
 
     //Tries to apply the rule to the first place it finds a match
-    pub fn apply_rule_lazy(&mut self, rule: &Rule){
+    pub fn _apply_rule_lazy(&mut self, rule: &Rule){
 
         //Iterate over the whole dungeon grid the rule can reach
         for i in 0..=(self.rows-rule.rows){
@@ -78,18 +113,25 @@ impl Grid{
     }
 
     //Will attempts to apply a random rule. If the rule it selected fails, it tries another.
-    pub fn apply_random_rule(&mut self, rules:&Vec<Rule>){
+    pub fn apply_random_rule(&mut self, rset:&RuleSet){
 
-        let mut viable: Vec<usize> = (0..rules.len()).collect();
+        let mut viable: Vec<usize> = (0..rset.rules.len()).collect();
 
         while viable.len() > 0 {
 
-            let r = rand::random::<usize>() % viable.len();
+            //println!("Running random rule");
 
-            if self.apply_rule(&rules[r]){
-                return;
-            }else{
-                viable.remove(r);
+            //Shitty way to do this, will have to think of a better way
+            let r = weighted_pick(rset.rules.len(),&rset.weights);
+            match viable.binary_search(&r){
+                Ok(x) => {
+                    if self.apply_rule(&rset.rules[r]){
+                        return;
+                    }else{
+                        viable.remove(x);
+                    }
+                }
+                Err(_) => (),
             }
         }
     }

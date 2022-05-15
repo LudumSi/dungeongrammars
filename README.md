@@ -14,7 +14,9 @@ Likewise, rules which should be mirrored along the horizontal axis should have a
 
 Rotation and mirroring is culmulative. So if rotations with mirroring the rotations will also be mirrored. Note that this will affect rule weighting as the generator considers each rotation and mirror to be its own rule.
 
-An equation sign immediately follows the header on its own line.
+An equals sign immediately follows the header on its own line. 
+
+The equals sign is optionally followed by an integer representing the random weight of the rule. By default, weight is 1. Putting a weight under the header (above the rule's target) affects the weighting of searching for that target among all rules in the folder. Putting a weight above a result affects the weighting of which result is picked (if there are multiple results).
 
 Example headers:
 ```
@@ -22,11 +24,11 @@ Example headers:
 R
 =
 ``` 
-This produces a rule which matches with a 3x3 space with rotations
+This produces a rule which matches with a 3x3 space with rotations and is 5 times more likely to be picked than a rule with a weight of 1.
 
 ```
 2,3
-= 
+=5 
 ``` 
 This produces a rule which matches with a 2x3 space without rotations
 
