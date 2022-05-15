@@ -24,13 +24,15 @@ Example headers:
 R
 =
 ``` 
-This produces a rule which matches with a 3x3 space with rotations and is 5 times more likely to be picked than a rule with a weight of 1.
+This produces a rule which matches with a 3x3 space with rotations.
+
 
 ```
 2,3
 =5 
 ``` 
-This produces a rule which matches with a 2x3 space without rotations
+This produces a rule which matches with a 2x3 space without rotations and is 5 times more likely to be picked than a rule with a weight of 1.
+
 
 ```
 2,3
