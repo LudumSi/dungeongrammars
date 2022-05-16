@@ -61,7 +61,7 @@ impl Grid{
         let mut newgrid = vec![vec![Tile::Blank;self.columns];self.rows];
         for i in 0..self.rows{
             for j in 0..self.columns{
-                newgrid[self.columns-i-1][j] = flip_tile_v(self.array[i][j])
+                newgrid[self.rows-i-1][j] = flip_tile_v(self.array[i][j])
             }
         }
 
